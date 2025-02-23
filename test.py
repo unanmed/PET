@@ -17,7 +17,10 @@ from config.config import get_arguments
 from tqdm import tqdm
 import cv2
 import imageio
-from skimage.measure import compare_psnr, compare_ssim, compare_mse, shannon_entropy,compare_nrmse
+from skimage.metrics import peak_signal_noise_ratio as compare_psnr
+from skimage.metrics import structural_similarity as compare_ssim
+from skimage.metrics import mean_squared_error as compare_mse
+from skimage.metrics import normalized_root_mse as compare_nrmse
 from matplotlib import pyplot as plt
 import math
 import scipy.io as io
@@ -25,9 +28,9 @@ import scipy.io as io
 import pydicom
 
 
-os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
-os.environ['CUDA_VISIBLE_DEVICES'] = str(np.argmax([int(x.split()[2]) for x in open('tmp', 'r').readlines()]))
-os.system('rm tmp')
+# os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+# os.environ['CUDA_VISIBLE_DEVICES'] = str(np.argmax([int(x.split()[2]) for x in open('tmp', 'r').readlines()]))
+# os.system('rm tmp')
 
 parser = get_arguments()
 parser.add_argument("--ckpt", type=str, default="./results/data_all_norm_black/1to1/checkpoint/0028.pth", help="Checkpoint path.") 

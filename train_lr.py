@@ -17,13 +17,16 @@ from dataset.mri_dataset import mriDataset
 from config.config import get_arguments
 
 from tensorboardX import SummaryWriter
-from skimage.measure import compare_psnr
 import scipy.io as sio
 import matplotlib.pyplot as plt
-os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
-os.environ['CUDA_VISIBLE_DEVICES'] = str(np.argmax([int(x.split()[2]) for x in open('tmp', 'r').readlines()]))
+# os.system('nvidia-smi -q -d Memory |grep -A4 GPU|grep Free >tmp')
+# os.environ['CUDA_VISIBLE_DEVICES'] = str(np.argmax([int(x.split()[2]) for x in open('tmp', 'r').readlines()]))
 # os.environ['CUDA_VISIBLE_DEVICES'] = "1"
-os.system('rm tmp')
+# os.system('rm tmp')
+
+print(torch.cuda.is_available())
+print(torch.cuda.current_device())
+print(torch.cuda.get_device_name(0))
 
 parser = get_arguments()
 parser.add_argument("--out_path", type=str, default="./results/", help="Path to save checkpoint. ")
