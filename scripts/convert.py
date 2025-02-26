@@ -91,10 +91,10 @@ def traverse_and_convert(input_dir, png_output_dir, mat_output_dir):
 
 if __name__ == "__main__":
     # 输入 DICOM 文件夹路径
-    input_directory = "F:\download\AC data"  # 替换为实际路径
+    input_directory = "D:\PET\AC data"  # 替换为实际路径
     # 输出路径
-    png_output_directory = "F:\download\AC_Output\png"
-    mat_output_directory = "F:\download\AC_Output\mat"
+    png_output_directory = "D:\PET\image\png"
+    mat_output_directory = "D:\PET\image\mat"
 
     traverse_and_convert(input_directory, png_output_directory, mat_output_directory)
     print("🎉 All DICOM files converted to PNG and MAT!")

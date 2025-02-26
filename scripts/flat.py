@@ -3,10 +3,10 @@ import shutil
 import re
 
 # 定义输入和输出目录
-png_input_dir = "png/brain"
-mat_input_dir = "mat/brain"
-png_output_dir = "output"
-mat_output_dir = "output_mat"
+png_input_dir = "D:/PET/image2/png/brain"
+mat_input_dir = "D:/PET/image2/mat/brain"
+png_output_dir = "D:/PET/output/png"
+mat_output_dir = "D:/PET/output/mat"
 
 def flat_folder():
     # 确保输出目录存在
@@ -43,10 +43,14 @@ def flat_folder():
 
         # 获取文件列表并按数值顺序排序
         def sorted_file_list(directory, ext):
-            return sorted(
-                (f for f in os.listdir(directory) if f.endswith(ext)),
-                key=lambda x: int(re.findall(r"\d+", x)[0])  # 提取数字部分进行排序
-            )
+            files = [f for f in os.listdir(directory) if f.endswith(ext)]
+            
+            # 确保文件名包含数字，防止 index out of range 
+            def extract_number(filename): 
+                numbers = re.findall(r"\d+", filename) 
+                return int(numbers[0]) if numbers else float('inf') # 默认无数字的文件排在最后 
+            
+            return sorted(files, key=extract_number)
 
         # 获取 PNG 和 MAT 文件列表
         ct_png_files = sorted_file_list(ct_png_path, ".png")
