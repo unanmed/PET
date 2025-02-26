@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 print(torch.cuda.is_available())
 print(torch.cuda.current_device())
 print(torch.cuda.get_device_name(0))
+torch.backends.cudnn.benchmark = True
 
 parser = get_arguments()
 parser.add_argument("--out_path", type=str, default="./results/", help="Path to save checkpoint. ")
@@ -50,7 +51,6 @@ def save_img(img, img_path):
     img = np.clip(img*255,0,255)
     cv2.imwrite(img_path, img)
 
-
 def main(args):
     # ======================================define the model======================================
     writer = SummaryWriter(args.out_path+"%s"%args.task)
@@ -67,7 +67,9 @@ def main(args):
 
     print("[INFO] Start data loading and preprocessing")
     Dataset = mriDataset(opt=args,root1=args.root1,root2=args.root2,root3=args.root3)
-    dataloader = DataLoader(Dataset, batch_size=args.batch_size, shuffle=True, num_workers=0, drop_last=True)
+    dataloader = DataLoader(
+        Dataset, batch_size=1, num_workers=4, drop_last=True, pin_memory=True
+    )
     
     print("[INFO] Start to train")
     step = 0
@@ -79,40 +81,31 @@ def main(args):
         loss_this_time = 0
         for i_batch, sample_batched in enumerate(dataloader):
             step_time = time.time()
-
-            input, target_forward, input_target = sample_batched['input_img'].cuda(), sample_batched['target_forward_img'].cuda(), \
-                                        sample_batched['input_target_img'].cuda()
-            file_name = sample_batched['target_forward_name'][0]
             
+            input = sample_batched['input_img'].to('cuda', non_blocking=True)
+            target_forward = sample_batched['target_forward_img'].to('cuda', non_blocking=True)
+            input_target = sample_batched['input_target_img'].to('cuda', non_blocking=True)
             
-
+            input = input.contiguous(memory_format=torch.channels_last)
+            target_forward = target_forward.contiguous(memory_format=torch.channels_last)
+            input_target = input_target.contiguous(memory_format=torch.channels_last)
+            
             reconstruct_for = net(input) 
-            reconstruct_for = torch.clamp(reconstruct_for, 0, 1)  
-
-            #reconstruct_for_m = ((reconstruct_for[:,0,:,:]+reconstruct_for[:,1,:,:])/2).squeeze()
-            
-            
-
-            #forward_loss = F.mse_loss(reconstruct_for_m, target_forward.squeeze())    # 
+            reconstruct_for = torch.clamp(reconstruct_for, 0, 1).detach()  
             forward_loss = F.l1_loss(reconstruct_for, target_forward)
             
-            writer.add_scalar('forward_loss',forward_loss.item(),global_step=step)
+            writer.add_scalar('forward_loss', forward_loss.item(), global_step=step)
 
             reconstruct_rev = net(reconstruct_for, rev=True)
-
             reconstruct_rev = torch.clamp(reconstruct_rev, 0, 1)  
-
-            #rev_loss = F.mse_loss(reconstruct_rev, input_target)
             rev_loss = F.l1_loss(reconstruct_rev, input_target)
             
-            writer.add_scalar('rev_loss',rev_loss.item(),global_step=step)
-            
-            
+            writer.add_scalar('rev_loss', rev_loss.item(), global_step=step)
             
             loss =  args.weight * forward_loss + rev_loss
-            writer.add_scalar('loss',loss.item(),global_step=step)
+            writer.add_scalar('loss', loss.item(), global_step=step)
             print('epoch: ' + str(epoch) + ' iter: ' + str(i_batch) +' loss: ' + str(loss.item()))
-            optimizer.zero_grad()
+            optimizer.zero_grad(set_to_none=True)
             loss.backward()
             optimizer.step()
             

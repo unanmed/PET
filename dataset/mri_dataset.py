@@ -4,7 +4,7 @@ import os, random, time
 import matplotlib.pyplot as plt
 import torch
 import numpy as np
-from torch.utils.data import Dataset
+from torch.utils.data import IterableDataset
 from torchvision import transforms, utils
 
 from glob import glob
@@ -33,7 +33,7 @@ def create_mask(height_down, height_up, width_left, width_right):
     mask[height_down:height_up, width_left:width_right] = 1
     return mask
 
-class mriDataset(Dataset):
+class mriDataset(IterableDataset):
     def __init__(self, opt,root1,root2,root3): 
     
         self.task = opt.task
@@ -43,6 +43,9 @@ class mriDataset(Dataset):
         
         assert len(input_2) == len(target_forward) == len(input_3)
 
+        self.file_names = sorted([
+            f for f in os.listdir(root2) if f.endswith(".mat")
+        ])
         self.data = {'input_2':input_2, 'target_forward':target_forward,'input_3':input_3}
             
     def np2tensor(self, array):
@@ -51,55 +54,54 @@ class mriDataset(Dataset):
     def __len__(self):
         return len(self.data['target_forward'])
 
-    def __getitem__(self, idx):
+    def __iter__(self):
         self.data['input_2'].sort()
         self.data['target_forward'].sort()
         self.data['input_3'].sort()
         
-        input_2_path = self.data['input_2'][idx]
-        target_forward_path = self.data['target_forward'][idx]
-        input_3_path = self.data['input_3'][idx]
-        
-        assert (input_2_path.split('/')[-1]) == (target_forward_path.split('/')[-1]) == (input_3_path.split('/')[-1])
-        
-        input_2_data = io.loadmat(input_2_path)['img']  # (256, 256)
-        target_forward_data = io.loadmat(target_forward_path)['img']  # (512, 512)
-        input_3_data = io.loadmat(input_3_path)['img']  # (256, 256)
-        
-        if target_forward_data.shape == (512, 512):
-            target_forward_data = cv2.resize(target_forward_data, (256, 256))
-        
-        h,w = input_2_data.shape
+        for idx in range(0, len(self.file_names)):
+            input_2_path = self.data['input_2'][idx]
+            target_forward_path = self.data['target_forward'][idx]
+            input_3_path = self.data['input_3'][idx]
+            
+            assert (input_2_path.split('/')[-1]) == (target_forward_path.split('/')[-1]) == (input_3_path.split('/')[-1])
+            
+            input_2_data = io.loadmat(input_2_path)['img']  # (256, 256)
+            target_forward_data = io.loadmat(target_forward_path)['img']  # (256, 256)
+            input_3_data = io.loadmat(input_3_path)['img']  # (256, 256)
+            
+            h,w = input_2_data.shape
 
-        target_forward_img = np.expand_dims(target_forward_data, 2) 
-        target_forward_img = np.concatenate((target_forward_img,target_forward_img,target_forward_img),axis=2)
+            target_forward_img = np.expand_dims(target_forward_data, 2) 
+            target_forward_img = np.concatenate((target_forward_img,target_forward_img,target_forward_img),axis=2)
 
-        input_2_img = np.expand_dims(input_2_data, 2) 
-        input_3_img = np.expand_dims(input_3_data, 2)
+            input_2_img = np.expand_dims(input_2_data, 2) 
+            input_3_img = np.expand_dims(input_3_data, 2)
+            
+            input_img = np.zeros((h,w,3))
+                            
+            if  self.task== '1to1':                      
+                input_img[:,:,0] = input_2_img[:,:,0]
+                input_img[:,:,1] = input_2_img[:,:,0]
+                input_img[:,:,2] = input_2_img[:,:,0]
+            else:
+                assert 0
+
+            input_target_img = input_img.copy()
+
+            input_img = self.np2tensor(input_img).float()
+            target_forward_img = self.np2tensor(target_forward_img).float()
+            input_target_img = self.np2tensor(input_target_img).float()
+
+            sample = {
+                'input_img': input_img, 
+                'target_forward_img': target_forward_img, 
+                'input_target_img': input_target_img,
+                'input2_name': input_2_path.split("/")[-1].split(".")[0],
+                'input3_name': input_3_path.split("/")[-1].split(".")[0],
+                'target_forward_name': target_forward_path.split("/")[-1].split(".")[0]
+            }
+            yield sample
         
-        input_img = np.zeros((h,w,3))
-                           
-        if  self.task== '1to1':                      
-            input_img[:,:,0] = input_2_img[:,:,0]
-            input_img[:,:,1] = input_2_img[:,:,0]
-            input_img[:,:,2] = input_2_img[:,:,0]
-        else:
-            assert 0
-
-        input_target_img = input_img.copy()
-
-        input_img = self.np2tensor(input_img).float()
-        target_forward_img = self.np2tensor(target_forward_img).float()
-        input_target_img = self.np2tensor(input_target_img).float()
-
-        sample = {
-            'input_img': input_img, 
-            'target_forward_img': target_forward_img, 
-            'input_target_img': input_target_img,
-            'input2_name': input_2_path.split("/")[-1].split(".")[0],
-            'input3_name': input_3_path.split("/")[-1].split(".")[0],
-            'target_forward_name': target_forward_path.split("/")[-1].split(".")[0]
-        }
-        return sample
 
 
