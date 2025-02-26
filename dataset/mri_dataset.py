@@ -60,69 +60,31 @@ class mriDataset(Dataset):
         target_forward_path = self.data['target_forward'][idx]
         input_3_path = self.data['input_3'][idx]
         
-
-        
         assert (input_2_path.split('/')[-1]) == (target_forward_path.split('/')[-1]) == (input_3_path.split('/')[-1])
-                     
-        input_2_data = io.loadmat(input_2_path)['data']  # (250, 250)
-        target_forward_data = io.loadmat(target_forward_path)['data']  # (512, 512)
-        input_3_data = io.loadmat(input_3_path)['data']  # (250, 250)
         
-        num_of_ct = int(target_forward_path.split("/")[-1].split(".")[0])
-        
-        
-        mask = generate_mask(128, 128, 64, 64, 64)
+        input_2_data = io.loadmat(input_2_path)['img']  # (256, 256)
+        target_forward_data = io.loadmat(target_forward_path)['img']  # (512, 512)
+        input_3_data = io.loadmat(input_3_path)['img']  # (256, 256)
         
         if target_forward_data.shape == (512, 512):
-        
-            target_forward_data = cv2.resize(target_forward_data, (250, 250))
-        
-        target_forward_data_ori = target_forward_data
-        target_forward_data = target_forward_data[61:189, 61:189]
-        input_2_data_ori = input_2_data
-        input_2_data = input_2_data[61:189, 61:189]
-        input_3_data_ori = input_3_data
-        input_3_data = input_3_data[61:189, 61:189]
-        
-
-        target_forward_data = target_forward_data * mask
-        
-        input_2_data = input_2_data * mask
-        
-        input_3_data = input_3_data * mask
-        
-        
-        if num_of_ct>=641 and num_of_ct<=680:
-            target_forward_data = target_forward_data_ori
-            input_2_data = input_2_data_ori
-            input_3_data = input_3_data_ori
-            target_forward_data = target_forward_data[61:189, 61:189]
-            input_2_data = input_2_data[61:189, 61:189]
-            input_3_data = input_3_data[61:189, 61:189]
-            
-        
+            target_forward_data = cv2.resize(target_forward_data, (256, 256))
         
         h,w = input_2_data.shape
 
         target_forward_img = np.expand_dims(target_forward_data, 2) 
         target_forward_img = np.concatenate((target_forward_img,target_forward_img,target_forward_img),axis=2)
 
-        
         input_2_img = np.expand_dims(input_2_data, 2) 
         input_3_img = np.expand_dims(input_3_data, 2)
         
         input_img = np.zeros((h,w,3))
                            
         if  self.task== '1to1':                      
-            
             input_img[:,:,0] = input_2_img[:,:,0]
             input_img[:,:,1] = input_2_img[:,:,0]
             input_img[:,:,2] = input_2_img[:,:,0]
         else:
             assert 0
-            
-
-
 
         input_target_img = input_img.copy()
 
@@ -130,8 +92,14 @@ class mriDataset(Dataset):
         target_forward_img = self.np2tensor(target_forward_img).float()
         input_target_img = self.np2tensor(input_target_img).float()
 
-        sample = {'input_img':input_img, 'target_forward_img':target_forward_img, 'input_target_img':input_target_img,
-                    'input2_name':input_2_path.split("/")[-1].split(".")[0],'input3_name':input_3_path.split("/")[-1].split(".")[0],'target_forward_name':target_forward_path.split("/")[-1].split(".")[0]}
+        sample = {
+            'input_img': input_img, 
+            'target_forward_img': target_forward_img, 
+            'input_target_img': input_target_img,
+            'input2_name': input_2_path.split("/")[-1].split(".")[0],
+            'input3_name': input_3_path.split("/")[-1].split(".")[0],
+            'target_forward_name': target_forward_path.split("/")[-1].split(".")[0]
+        }
         return sample
 
 
