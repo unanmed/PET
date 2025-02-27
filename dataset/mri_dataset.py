@@ -65,8 +65,13 @@ class mriDataset(Dataset):
         input_2_data = io.loadmat(input_2_path)['img']
         target_forward_data = io.loadmat(target_forward_path)['img']
         
+        mask = generate_mask(128, 128, 64, 64, 64)
+        
         if target_forward_data.shape == (512, 512):
             target_forward_data = cv2.resize(target_forward_data, (256, 256))
+            
+        input_2_data = input_2_data * mask
+        target_forward_data = target_forward_data * mask
         
         h,w = input_2_data.shape
 

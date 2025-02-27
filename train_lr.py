@@ -69,7 +69,7 @@ def main(args):
     print("[INFO] Start data loading and preprocessing")
     Dataset = mriDataset(opt=args,root1=args.root1,root2=args.root2,root3=args.root3)
     dataloader = DataLoader(
-        Dataset, batch_size=4, num_workers=2, drop_last=True, pin_memory=True,
+        Dataset, batch_size=2, num_workers=2, drop_last=True, pin_memory=True,
         prefetch_factor=2
     )
     
