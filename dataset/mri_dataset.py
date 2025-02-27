@@ -42,6 +42,10 @@ class mriDataset(Dataset):
         input_3 = np.array([root3 +"/"+ x  for x in os.listdir(root3)])
         
         assert len(input_2) == len(target_forward) == len(input_3)
+        
+        input_2.sort()
+        input_3.sort()
+        target_forward.sort()
 
         self.data = {'input_2':input_2, 'target_forward':target_forward,'input_3':input_3}
             
@@ -51,20 +55,15 @@ class mriDataset(Dataset):
     def __len__(self):
         return len(self.data['target_forward'])
 
-    def __getitem__(self, idx):
-        self.data['input_2'].sort()
-        self.data['target_forward'].sort()
-        self.data['input_3'].sort()
-        
+    def __getitem__(self, idx):        
         input_2_path = self.data['input_2'][idx]
         target_forward_path = self.data['target_forward'][idx]
         input_3_path = self.data['input_3'][idx]
         
         assert (input_2_path.split('/')[-1]) == (target_forward_path.split('/')[-1]) == (input_3_path.split('/')[-1])
         
-        input_2_data = io.loadmat(input_2_path)['img']  # (256, 256)
-        target_forward_data = io.loadmat(target_forward_path)['img']  # (512, 512)
-        input_3_data = io.loadmat(input_3_path)['img']  # (256, 256)
+        input_2_data = io.loadmat(input_2_path)['img']
+        target_forward_data = io.loadmat(target_forward_path)['img']
         
         if target_forward_data.shape == (512, 512):
             target_forward_data = cv2.resize(target_forward_data, (256, 256))
@@ -75,11 +74,9 @@ class mriDataset(Dataset):
         target_forward_img = np.concatenate((target_forward_img,target_forward_img,target_forward_img),axis=2)
 
         input_2_img = np.expand_dims(input_2_data, 2) 
-        input_3_img = np.expand_dims(input_3_data, 2)
-        
         input_img = np.zeros((h,w,3))
                            
-        if  self.task== '1to1':                      
+        if self.task== '1to1':                      
             input_img[:,:,0] = input_2_img[:,:,0]
             input_img[:,:,1] = input_2_img[:,:,0]
             input_img[:,:,2] = input_2_img[:,:,0]

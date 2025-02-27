@@ -76,6 +76,7 @@ def main(args):
     print("[INFO] Start to train")
     step = 0
     loss_all = np.zeros((300), dtype='float')
+    num_batches = len(dataloader)
     
     for epoch in range(0, 50):
         epoch_time = time.time()             
@@ -88,12 +89,8 @@ def main(args):
             target_forward = sample_batched['target_forward_img'].cuda()
             input_target = sample_batched['input_target_img'].cuda()
             
-            input = input.contiguous(memory_format=torch.channels_last)
-            target_forward = target_forward.contiguous(memory_format=torch.channels_last)
-            input_target = input_target.contiguous(memory_format=torch.channels_last)
-            
             reconstruct_for = net(input)
-            reconstruct_for = torch.clamp(reconstruct_for, 0, 1).detach()
+            reconstruct_for = torch.clamp(reconstruct_for, 0, 1)
             forward_loss = F.l1_loss(reconstruct_for, target_forward)
             
             writer.add_scalar('forward_loss', forward_loss.item(), global_step=step)
@@ -107,7 +104,7 @@ def main(args):
             loss =  args.weight * forward_loss + rev_loss
             writer.add_scalar('loss', loss.item(), global_step=step)
             print('epoch: ' + str(epoch) + ' iter: ' + str(i_batch) +' loss: ' + str(loss.item()))
-            optimizer.zero_grad(set_to_none=True)
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             
@@ -115,7 +112,7 @@ def main(args):
             
             step += 1
             
-        loss_this_time = loss_this_time / 1440.0
+        loss_this_time = loss_this_time / num_batches
         loss_all[epoch] = loss_this_time
         
         torch.save(net.state_dict(), args.out_path+"%s/checkpoint/latest.pth"%args.task)
