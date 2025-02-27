@@ -5,8 +5,8 @@ import scipy.io as sio
 from tqdm import tqdm
 
 # 📂 输入 MAT 文件夹 和 预处理后的输出文件夹
-input_folder = "D:/PET/output/mat/CT"  # 原始 .mat 文件夹
-output_folder = "D:/PET/output/mat/CT_resize"  # 预处理后 256x256 的 .mat
+input_folder = "D:/PET/output/mat/NAC_gen"  # 原始 .mat 文件夹
+output_folder = "D:/PET/output/mat/NAC_gen_resize"  # 预处理后 256x256 的 .mat
 
 # 创建输出文件夹
 os.makedirs(output_folder, exist_ok=True)
@@ -22,12 +22,9 @@ for filename in tqdm(os.listdir(input_folder), desc="Processing CT MAT Files"):
             continue
         
         img = mat_data['img']  # 提取图像数据
-        if img.shape != (512, 512):  # 确保输入是 512x512
-            print(f"⚠ 警告: {filename} 形状异常 {img.shape}，跳过")
-            continue
         
         # ✅ 统一大小 512x512 -> 256x256
-        img_resized = cv2.resize(img, (256, 256), interpolation=cv2.INTER_AREA)
+        img_resized = cv2.resize(img, (128, 128), interpolation=cv2.INTER_AREA)
         
         # ✅ 归一化并转换为 float32
         img_resized = img_resized.astype(np.float32)

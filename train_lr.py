@@ -54,8 +54,9 @@ def save_img(img, img_path):
 def main(args):
     # ======================================define the model======================================
     writer = SummaryWriter(args.out_path+"%s"%args.task)
-    net = InvISPNet(channel_in=3, channel_out=3, block_num=8)
-    net.cuda()
+    net = InvISPNet(channel_in=3, channel_out=3, block_num=6)
+    device = torch.device("cuda")
+    net.to(device)
     # load the pretrained weight if there exists one
     if args.resume:
         net.load_state_dict(torch.load(args.out_path+"%s/checkpoint/latest.pth"%args.task))
@@ -68,30 +69,31 @@ def main(args):
     print("[INFO] Start data loading and preprocessing")
     Dataset = mriDataset(opt=args,root1=args.root1,root2=args.root2,root3=args.root3)
     dataloader = DataLoader(
-        Dataset, batch_size=1, num_workers=4, drop_last=True, pin_memory=True
+        Dataset, batch_size=4, num_workers=2, drop_last=True, pin_memory=True,
+        prefetch_factor=2
     )
     
     print("[INFO] Start to train")
     step = 0
     loss_all = np.zeros((300), dtype='float')
     
-    for epoch in range(0, 300):
+    for epoch in range(0, 50):
         epoch_time = time.time()             
         PSNR = []
         loss_this_time = 0
         for i_batch, sample_batched in enumerate(dataloader):
             step_time = time.time()
             
-            input = sample_batched['input_img'].to('cuda', non_blocking=True)
-            target_forward = sample_batched['target_forward_img'].to('cuda', non_blocking=True)
-            input_target = sample_batched['input_target_img'].to('cuda', non_blocking=True)
+            input = sample_batched['input_img'].cuda()
+            target_forward = sample_batched['target_forward_img'].cuda()
+            input_target = sample_batched['input_target_img'].cuda()
             
             input = input.contiguous(memory_format=torch.channels_last)
             target_forward = target_forward.contiguous(memory_format=torch.channels_last)
             input_target = input_target.contiguous(memory_format=torch.channels_last)
             
-            reconstruct_for = net(input) 
-            reconstruct_for = torch.clamp(reconstruct_for, 0, 1).detach()  
+            reconstruct_for = net(input)
+            reconstruct_for = torch.clamp(reconstruct_for, 0, 1).detach()
             forward_loss = F.l1_loss(reconstruct_for, target_forward)
             
             writer.add_scalar('forward_loss', forward_loss.item(), global_step=step)
