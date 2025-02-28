@@ -35,8 +35,8 @@ def process_mat_files_in_folder(folder_path, output_folder):
             print(f"Processed {file_name} and saved to {output_path}")
 
 # 设置输入文件夹和输出文件夹
-input_folder = 'D:/PET/output/mat/CT_test_resize'  # 替换为你的输入文件夹路径
-output_folder = 'D:/PET/output/mat/CT_test_resize'   # 替换为你想保存转换后的文件夹路径
+input_folder = 'D:/PET/output/mat/NAC_gen_resize'  # 替换为你的输入文件夹路径
+output_folder = 'D:/PET/output/mat/NAC_gen_resize'   # 替换为你想保存转换后的文件夹路径
 
 # 批量处理文件夹中的所有 .mat 文件
 process_mat_files_in_folder(input_folder, output_folder)

@@ -54,7 +54,7 @@ def save_img(img, img_path):
 def main(args):
     # ======================================define the model======================================
     writer = SummaryWriter(args.out_path+"%s"%args.task)
-    net = InvISPNet(channel_in=3, channel_out=3, block_num=6)
+    net = InvISPNet(channel_in=3, channel_out=3, block_num=8)
     device = torch.device("cuda")
     net.to(device)
     # load the pretrained weight if there exists one
@@ -69,8 +69,8 @@ def main(args):
     print("[INFO] Start data loading and preprocessing")
     Dataset = mriDataset(opt=args,root1=args.root1,root2=args.root2,root3=args.root3)
     dataloader = DataLoader(
-        Dataset, batch_size=2, num_workers=2, drop_last=True, pin_memory=True,
-        prefetch_factor=2
+        Dataset, batch_size=2, num_workers=1, drop_last=True,
+        shuffle=True, prefetch_factor=2
     )
     
     print("[INFO] Start to train")
@@ -78,7 +78,7 @@ def main(args):
     loss_all = np.zeros((300), dtype='float')
     num_batches = len(dataloader)
     
-    for epoch in range(0, 50):
+    for epoch in range(0, 300):
         epoch_time = time.time()             
         PSNR = []
         loss_this_time = 0

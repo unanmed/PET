@@ -48,12 +48,6 @@ def save_img(img, img_path):
     img = np.clip(img*255,0,255)
     cv2.imwrite(img_path, img)
 
-def save_img_color(img, img_path):
-    img = np.clip(img*255,0,255)
-    
-    img_1 = img[:, :, :: -1]
-    cv2.imwrite(img_path, img_1)
-
 def main(args):
     # ======================================define the model============================================
     #net = InvISPNet(channel_in=3, channel_out=3, block_num=8)
@@ -61,9 +55,6 @@ def main(args):
     net = InvISPNet(channel_in=3, channel_out=3, block_num=8)
     
     device = torch.device("cuda:0")
-    
-    
-    
     
     net.to(device)
     net.eval()
@@ -77,7 +68,6 @@ def main(args):
     Dataset = mriDataset(opt=args,root1=args.root1,root2=args.root2,root3=args.root3)
     dataloader = DataLoader(Dataset, batch_size=args.batch_size, shuffle=False, num_workers=0, drop_last=True)
 
-
     PSNR=[]
     PSNR_REV2=[]
     PSNR_REV3=[]
@@ -87,14 +77,10 @@ def main(args):
     MSE=[]
     NMSE=[]
     RMSE=[]
-    
     NRMSE=[]
-    
     TIME=[]
     
-    
     print("[INFO] Start test...")
-    
     
     for i_batch, sample_batched in enumerate(tqdm(dataloader)):
         step_time = time.time() 
@@ -106,11 +92,9 @@ def main(args):
         input_file_name3 = sample_batched['input3_name'][0]
         target_file_name = sample_batched['target_forward_name'][0]
 
-
         with torch.no_grad():
             reconstruct_for = net(input)
             reconstruct_for = torch.clamp(reconstruct_for, 0, 1)
-
             reconstruct_rev = net(reconstruct_for, rev=True)
 
         pred_rev = reconstruct_rev.detach().permute(0,2,3,1).squeeze()  
@@ -120,16 +104,9 @@ def main(args):
         target_rev_patch = input_target.permute(0,2,3,1).squeeze().cpu().numpy()  
         
         pred_for_mean = (pred_for[:,:,0]+pred_for[:,:,1] + pred_for[:,:,2]) / 3.
-
-        
-        
-        
         target_forward_patch = (target_forward_patch[:,:,0]+target_forward_patch[:,:,1] + target_forward_patch[:,:,2]) / 3.
         
-        
-        
         if args.task == '2to1':
-
             target_rev_2 = target_rev_patch[:,:,0]
             target_rev_3 = target_rev_patch[:,:,1]
             pred_rev_2 = pred_rev[:,:,0]
@@ -140,9 +117,6 @@ def main(args):
             target_rev_3 = (target_rev_patch[:,:,0]+target_rev_patch[:,:,1])/2
             pred_rev_2 = (pred_rev[:,:,0] +pred_rev[:,:,1])/2
             pred_rev_3 = (pred_rev[:,:,0] +pred_rev[:,:,1])/2
-        
-        
-
         
         psnr = compare_psnr( 255 * abs(target_forward_patch),255 * abs(pred_for_mean), data_range=255)
         psnr_rev_2 = compare_psnr( 255 * abs(target_rev_2),255 * abs(pred_rev_2), data_range=255)
@@ -162,7 +136,6 @@ def main(args):
         SSIM_REV2.append(ssim_rev_2)
         SSIM_REV3.append(ssim_rev_3)
         MSE.append(mse)
-
         NMSE.append(nmse)
         RMSE.append(rmse)
         save_path= args.out_path+'/test/{}'.format(ckpt_allname)
@@ -176,9 +149,8 @@ def main(args):
         os.makedirs(save_path+'/target_rev_3', exist_ok=True)
 
         save_img(pred_for_mean, save_path+'/pred'+'/pred_'+target_file_name+'.png')
-        io.savemat(save_path+'/pred_mat'+'/pred_'+target_file_name+'.mat',{'data':pred_for_mean})
+        io.savemat(save_path+'/pred_mat'+'/pred_'+target_file_name+'.mat',{'img':pred_for_mean})
 
-        
         save_img(target_forward_patch, save_path+'/target'+'/target_'+target_file_name+'.png')
         save_img(pred_rev_2, save_path+'/pred_rev_2'+'/pred_rev_'+input_file_name2+'.png')  
         save_img(pred_rev_3, save_path+'/pred_rev_3'+'/pred_rev_'+input_file_name3+'.png')
@@ -188,8 +160,6 @@ def main(args):
         times =  time.time()-step_time
         
         TIME.append(times)
-
-        print("[INFO] Epoch time: ", time.time()-step_time, "task: ", args.task)
 
         del reconstruct_for
         del reconstruct_rev
@@ -223,7 +193,6 @@ def main(args):
     ave_rmse = sum(RMSE) / len(RMSE)
     RMSE_std = np.std(RMSE)
 
-
     print('ave_psnr',ave_psnr)
     print('ave_psnr_rev2',ave_psnr_rev2)
     print('ave_psnr_rev3',ave_psnr_rev3)
@@ -237,26 +206,14 @@ def main(args):
     with open('results_test.txt', 'a+') as f:
         f.write('\n'*3)
         f.write(ckpt_allname+'\n')
-        
-        f.write('ave_time:'+str(ave_time)+' '*3+'all_time:'+str(all_time)+'\n')
-                
+        f.write('ave_time:'+str(ave_time)+' '*3+'all_time:'+str(all_time)+'\n')   
         f.write('ave_psnr:'+str(ave_psnr)+' '*3+'PSNR_std:'+str(PSNR_std)+'\n')
-
         f.write('ave_psnr_rev2:'+str(ave_psnr_rev2)+' '*3+'PSNR_REV2_std:'+str(PSNR_REV2_std)+'\n')
-
         f.write('ave_psnr_rev3:'+str(ave_psnr_rev3)+' '*3+'PSNR_REV3_std:'+str(PSNR_REV3_std)+'\n')
-        
-    
         f.write('ave_ssim:'+str(ave_ssim)+' '*3+'SSIM_std:'+str(SSIM_std)+'\n')
-
         f.write('ave_ssim_rev2:'+str(ave_ssim_rev2)+' '*3+'SSIM_REV2_std:'+str(SSIM_REV2_std)+'\n')
-
         f.write('ave_ssim_rev3:'+str(ave_ssim_rev3)+' '*3+'SSIM_REV3_std:'+str(SSIM_REV3_std)+'\n')
-        
-
         #f.write('ave_mse:'+str(ave_mse)+'\n')
-        
-
         f.write('ave_nmse:'+str(ave_nmse)+' '*3+'NMSE_std:'+str(NMSE_std)+'\n')
         f.write('ave_rmse:'+str(ave_rmse)+' '*3+'RMSE_std:'+str(RMSE_std)+'\n')
 

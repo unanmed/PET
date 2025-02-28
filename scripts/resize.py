@@ -5,8 +5,8 @@ import scipy.io as sio
 from tqdm import tqdm
 
 # 📂 输入 MAT 文件夹 和 预处理后的输出文件夹
-input_folder = "D:/PET/output/mat/CTAC_test"  # 原始 .mat 文件夹
-output_folder = "D:/PET/output/mat/CTAC_test_resize"  # 预处理后 256x256 的 .mat
+input_folder = "D:/PET/output/mat/CT_test"  # 原始 .mat 文件夹
+output_folder = "D:/PET/output/mat/CT_test_resize"  # 预处理后 256x256 的 .mat
 
 # 创建输出文件夹
 os.makedirs(output_folder, exist_ok=True)
