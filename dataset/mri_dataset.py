@@ -18,19 +18,9 @@ import matplotlib.pyplot as plt
 
 
 def generate_mask(img_height,img_width,radius,center_x,center_y):
- 
     y,x=np.ogrid[0:img_height,0:img_width]
- 
     # circle mask
- 
     mask = (x-center_x)**2+(y-center_y)**2<=radius**2
- 
-    return mask
-    
-
-def create_mask(height_down, height_up, width_left, width_right):
-    mask = np.zeros((128, 128))
-    mask[height_down:height_up, width_left:width_right] = 1
     return mask
 
 class mriDataset(Dataset):
@@ -65,10 +55,7 @@ class mriDataset(Dataset):
         input_2_data = io.loadmat(input_2_path)['img']
         target_forward_data = io.loadmat(target_forward_path)['img']
         
-        mask = generate_mask(128, 128, 64, 64, 64)
-        
-        if target_forward_data.shape == (512, 512):
-            target_forward_data = cv2.resize(target_forward_data, (256, 256))
+        mask = generate_mask(256, 256, 128, 128, 128)
             
         input_2_data = input_2_data * mask
         target_forward_data = target_forward_data * mask

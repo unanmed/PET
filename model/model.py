@@ -117,14 +117,14 @@ class InvBlock(nn.Module):
             x1, x2 = (x.narrow(1, 0, self.split_len1), x.narrow(1, self.split_len1, self.split_len2)) 
 
             y1 = x1 + self.F(x2) # 1 channel 
-            self.s = self.clamp * (torch.sigmoid(self.H(y1)) * 2 - 1)
-            y2 = x2.mul(torch.exp(self.s)) + self.G(y1) # 2 channel 
+            s = self.clamp * (torch.sigmoid(self.H(y1)) * 2 - 1)
+            y2 = x2 * torch.exp(s) + self.G(y1) # 2 channel 
             out = torch.cat((y1, y2), 1)
         else:
             # split. 
             x1, x2 = (x.narrow(1, 0, self.split_len1), x.narrow(1, self.split_len1, self.split_len2)) 
-            self.s = self.clamp * (torch.sigmoid(self.H(x1)) * 2 - 1)
-            y2 = (x2 - self.G(x1)).div(torch.exp(self.s)) 
+            s = self.clamp * (torch.sigmoid(self.H(x1)) * 2 - 1)
+            y2 = (x2 - self.G(x1)) / torch.exp(s)
             y1 = x1 - self.F(y2) 
 
             x = torch.cat((y1, y2), 1)            
@@ -169,7 +169,7 @@ class InvISPNet(nn.Module):
                 init.constant_(m.bias.data, 0.0)
     
     def forward(self, x, rev=False):
-        out = x # x: [N,3,H,W] 
+        out = x.clone() # x: [N,3,H,W] 
         #assert 0
         
         if not rev: 

@@ -3,8 +3,8 @@ import numpy as np
 import scipy.io as io
 
 # 设置输入和输出文件夹
-input_folder = "D:/PET/output/mat/CT_test_resize"  # 替换为你的.mat文件夹路径
-output_folder = "D:/PET/output/mat/CT_test_resize"  # 归一化后的.mat存放路径
+input_folder = "../mat/NAC_resize"  # 替换为你的.mat文件夹路径
+output_folder = "../mat/NAC_resize_normalized"  # 归一化后的.mat存放路径
 
 os.makedirs(output_folder, exist_ok=True)  # 确保输出文件夹存在
 

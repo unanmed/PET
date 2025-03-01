@@ -355,7 +355,7 @@ class InvertibleConv1x1(nn.Module):
             lower = self.lower * self.l_mask + self.eye
 
             u = self.upper * self.l_mask.transpose(0, 1).contiguous()
-            u += torch.diag(self.sign_s * torch.exp(self.log_s))
+            u += torch.diag(self.sign_s.clone() * torch.exp(self.log_s))
 
             dlogdet = torch.sum(self.log_s) * h * w
             
@@ -368,7 +368,7 @@ class InvertibleConv1x1(nn.Module):
 
                 weight = torch.matmul(u_inv, torch.matmul(l_inv, p_inv))
             else:
-                weight = torch.matmul(self.p, torch.matmul(lower, u))
+                weight = torch.matmul(self.p.clone(), torch.matmul(lower, u))
 
         return weight.view(self.w_shape[0], self.w_shape[1], 1, 1), dlogdet
 
