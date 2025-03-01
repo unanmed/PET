@@ -21,7 +21,7 @@ def parse_arguments():
     parser.add_argument("--root3", type=str, default="./data/PD", help="Another input images. ")
     parser.add_argument("--resume", dest='resume', action='store_true',  help="Resume training. ")
     parser.add_argument("--loss", type=str, default="L2", choices=["L1", "L2"], help="Choose which loss function to use. ")
-    parser.add_argument("--lr", type=float, default=0.0003, help="Learning rate")
+    parser.add_argument("--lr", type=float, default=0.0001, help="Learning rate")
     parser.add_argument('--local_rank', type=int, default=0)
     args = parser.parse_args()
     return args
@@ -53,7 +53,7 @@ def main(world_size, args):
     dataset = mriDataset(opt=args, root1=args.root1, root2=args.root2, root3=args.root3)
     sampler = DistributedSampler(dataset, shuffle=True)
     dataloader = DataLoader(
-        dataset, batch_size=1, num_workers=1, drop_last=True,
+        dataset, batch_size=1, num_workers=4, drop_last=True,
         prefetch_factor=2, pin_memory=True, sampler=sampler
     )
     
@@ -87,22 +87,20 @@ def main(world_size, args):
         for i_batch, sample_batched in enumerate(dataloader):
             step_time = time.time()
             
-            input = sample_batched['input_img'].to(device)
-            target_forward = sample_batched['target_forward_img'].to(device)
-            input_target = sample_batched['input_target_img'].to(device)
+            input = sample_batched['input_img'].to(device, non_blocking=True)
+            target_forward = sample_batched['target_forward_img'].to(device, non_blocking=True)
+            input_target = sample_batched['input_target_img'].to(device, non_blocking=True)
             
             # 向前传播
             reconstruct_for = net(input)
             reconstruct_for = torch.clamp(reconstruct_for, 0, 1)
             forward_loss = F.l1_loss(reconstruct_for, target_forward)
-            
-            writer.add_scalar('forward_loss', forward_loss.item(), global_step=step)
-
             # 反向传播
             reconstruct_rev = net(reconstruct_for, rev=True)
             reconstruct_rev = torch.clamp(reconstruct_rev, 0, 1)
             rev_loss = F.l1_loss(reconstruct_rev, input_target)
             
+            writer.add_scalar('forward_loss', forward_loss.item(), global_step=step)
             writer.add_scalar('rev_loss', rev_loss.item(), global_step=step)
             
             loss = args.weight * forward_loss + rev_loss
